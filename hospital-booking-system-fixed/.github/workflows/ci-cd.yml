@@ -1,0 +1,174 @@
+# =====================================================================
+# CI/CD PIPELINE — Hospital Appointment Booking System
+# =====================================================================
+# Implements:
+#   Stage 1 - Smoke Gate       : compile + quick unit tests (< 1 min)
+#   Stage 2 - Full Unit Tests  : all Mockito/JUnit5 tests
+#   Stage 3 - Integration Tests: @SpringBootTest + H2 + MockMvc
+#   Stage 4 - Build Artifact   : package JAR (on main branch only)
+#
+# Triggers:
+#   - Push to any branch
+#   - Pull Request to main / develop
+#
+# Key decisions:
+#   - Uses H2 in-memory DB for tests (no MySQL service needed)
+#   - spring.profiles.active=test activates test properties
+#   - Caches Maven .m2 for faster builds
+#   - Unit tests run on every push; integration tests run on PR + main
+# =====================================================================
+
+name: Hospital System CI/CD
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # ───────────────────────────────────────────────────────────────────
+  # STAGE 1: SMOKE GATE — compile + lint (fail fast, < 60s)
+  # ───────────────────────────────────────────────────────────────────
+  smoke-gate:
+    name: "Stage 1 — Smoke Gate (Compile)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Compile only (fast fail)
+        run: mvn compile -q
+
+      - name: Check for compilation errors
+        run: mvn test-compile -q
+
+  # ───────────────────────────────────────────────────────────────────
+  # STAGE 2: UNIT TESTS — Mockito + JUnit5 (service layer)
+  # Runs: AppointmentServiceTest, AuthServiceTest, DoctorServiceTest
+  # ───────────────────────────────────────────────────────────────────
+  unit-tests:
+    name: "Stage 2 — Unit Tests (Mockito + JUnit5)"
+    runs-on: ubuntu-latest
+    needs: smoke-gate
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run unit tests (service layer, no Spring context)
+        run: |
+          mvn test \
+            -Dspring.profiles.active=test \
+            -Dtest="AppointmentServiceTest,AuthServiceTest,DoctorServiceTest" \
+            -q
+
+      - name: Upload unit test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: target/surefire-reports/
+
+  # ───────────────────────────────────────────────────────────────────
+  # STAGE 3: INTEGRATION TESTS — @SpringBootTest + H2 + MockMvc
+  # Runs: FullIntegrationTest, ApiContractTest, DefectLifecycleRegressionTest
+  # Also runs AppointmentControllerTest (@WebMvcTest)
+  # ───────────────────────────────────────────────────────────────────
+  integration-tests:
+    name: "Stage 3 — Integration & API Tests (H2 + MockMvc)"
+    runs-on: ubuntu-latest
+    needs: unit-tests
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run all tests including integration
+        run: |
+          mvn test \
+            -Dspring.profiles.active=test \
+            -q
+
+      - name: Run integration test phase (failsafe)
+        run: |
+          mvn failsafe:integration-test failsafe:verify \
+            -Dspring.profiles.active=test \
+            -q
+
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: |
+            target/surefire-reports/
+            target/failsafe-reports/
+
+  # ───────────────────────────────────────────────────────────────────
+  # STAGE 4: BUILD & PACKAGE JAR (main branch only)
+  # ───────────────────────────────────────────────────────────────────
+  build-artifact:
+    name: "Stage 4 — Build JAR Artifact"
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Package (skip tests — already passed in stage 3)
+        run: mvn package -DskipTests -q
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hospital-booking-system-jar
+          path: target/hospital-booking-system-*.jar
+          retention-days: 30
+
+  # ───────────────────────────────────────────────────────────────────
+  # SUMMARY — Pipeline status badge
+  # ───────────────────────────────────────────────────────────────────
+  pipeline-summary:
+    name: "Pipeline Summary"
+    runs-on: ubuntu-latest
+    needs: [ smoke-gate, unit-tests, integration-tests ]
+    if: always()
+
+    steps:
+      - name: Print summary
+        run: |
+          echo "## CI/CD Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Smoke Gate | ${{ needs.smoke-gate.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ${{ needs.unit-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Tests | ${{ needs.integration-tests.result }} |" >> $GITHUB_STEP_SUMMARY

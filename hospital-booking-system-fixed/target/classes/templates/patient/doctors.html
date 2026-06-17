@@ -1,0 +1,177 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Find Doctors</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--pr:#0a4d8c;--ac:#00b4d8;--dk:#071d34;--lt:#f0f7ff}
+    body{font-family:'DM Sans',sans-serif;background:#f3f6fb}
+    .sidebar{min-height:100vh;background:var(--dk)}
+    .sidebar .nav-link{color:rgba(255,255,255,.75);padding:12px 20px;transition:.2s}
+    .sidebar .nav-link:hover,.sidebar .nav-link.active{color:#fff;background:rgba(255,255,255,.1);border-left:3px solid var(--ac)}
+    .top-bar{background:#fff;padding:14px 28px;box-shadow:0 1px 12px rgba(10,77,140,.06);display:flex;align-items:center;justify-content:space-between}
+    .main{padding:28px;flex:1;overflow-y:auto}
+    .card-s{border:none;border-radius:16px;background:#fff;box-shadow:0 2px 16px rgba(10,77,140,.07);padding:22px}
+    .stat-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+    .table thead{background:var(--pr);color:#fff}
+    .table thead th{border:none;padding:13px 16px;font-weight:500}
+    .table tbody td{padding:12px 16px;vertical-align:middle}
+    .table tbody tr:hover{background:#f8fbff}
+    .badge-pending{background:#fff3cd;color:#856404}
+    .badge-confirmed{background:#d1ecf1;color:#0c5460}
+    .badge-completed{background:#d4edda;color:#155724}
+    .badge-cancelled{background:#f8d7da;color:#721c24}
+    .badge-no_show{background:#e2e3e5;color:#383d41}
+    .form-control,.form-select{border-radius:10px;border:1.5px solid #e2e8f0}
+    .form-control:focus,.form-select:focus{border-color:var(--pr);box-shadow:0 0 0 3px rgba(10,77,140,.1)}
+    .btn-primary{background:var(--pr);border:none;border-radius:10px}
+    .btn-primary:hover{background:#0d5ea6}
+    .alert-box{position:fixed;top:80px;right:24px;z-index:9999;min-width:300px}
+    .time-slot{border:2px solid #e2e8f0;border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:.25s;font-weight:500}
+    .time-slot:hover{border-color:var(--pr);background:var(--lt)}
+    .time-slot.selected{border-color:var(--pr);background:var(--pr);color:#fff}
+    .time-slot.unavailable{background:#fee2e2;border-color:#fca5a5;color:#991b1b;cursor:not-allowed}
+    .doctor-card{border:none;border-radius:16px;box-shadow:0 2px 16px rgba(10,77,140,.07);transition:all .3s}
+    .doctor-card:hover{transform:translateY(-4px);box-shadow:0 8px 32px rgba(10,77,140,.14)}
+    .doc-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--pr),var(--ac));display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.6rem}
+    .step-wrap{display:flex;align-items:center;margin-bottom:32px}
+    .step-dot{width:36px;height:36px;border-radius:50%;background:#e2e8f0;color:#64748b;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0}
+    .step-dot.active{background:var(--pr);color:#fff}
+    .step-dot.done{background:#16a34a;color:#fff}
+    .step-line{flex:1;height:2px;background:#e2e8f0;margin:0 8px}
+    .step-line.done{background:#16a34a}
+  </style></head>
+<body><div class="d-flex">
+  <div class="col-md-2 sidebar p-0"><div class="p-4"><a href="/" class="text-white text-decoration-none"><h6 class="fw-bold mb-0"><i class="bi bi-heart-pulse me-2" style="color:#00b4d8"></i>MediBook</h6></a><small class="text-white-50">Patient</small></div><nav class="nav flex-column"><a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a><a class="nav-link active" href="/patient/find-doctors"><i class="bi bi-search me-2"></i>Find Doctors</a><a class="nav-link" href="/patient/book-appointment"><i class="bi bi-plus-circle me-2"></i>Book Appointment</a><a class="nav-link" href="/patient/my-appointments"><i class="bi bi-calendar-check me-2"></i>My Appointments</a><a class="nav-link" href="/patient/profile"><i class="bi bi-person me-2"></i>Profile</a><a class="nav-link text-danger" href="/" onclick="logout()"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></nav></div>
+  <div class="flex-grow-1">
+    <div class="top-bar"><h6 class="fw-bold mb-0">Find Doctors</h6><span id="uName" class="text-muted small"></span></div>
+    <div class="main">
+      <div class="alert-box"><div id="alertBox"></div></div>
+      <div class="card-s mb-4">
+        <div class="row g-3">
+          <div class="col-md-5"><input type="text" id="search" class="form-control" placeholder="Search by name or specialization..." oninput="filter()"></div>
+          <div class="col-md-3"><select id="specFilter" class="form-select" onchange="filter()"><option value="">All Specializations</option></select></div>
+          <div class="col-md-2"><select id="ratingFilter" class="form-select" onchange="filter()"><option value="">Any Rating</option><option value="4">4+ Stars</option><option value="3">3+ Stars</option></select></div>
+          <div class="col-md-2"><button class="btn btn-primary w-100" onclick="filter()"><i class="bi bi-search me-2"></i>Search</button></div>
+        </div>
+      </div>
+      <div class="row g-4" id="docGrid"><div class="col-12 text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Loading doctors...</p></div></div>
+    </div>
+  </div>
+</div>
+<!-- Book Modal -->
+<div class="modal fade" id="bookModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content rounded-4">
+  <div class="modal-header border-0 pb-0"><h6 class="modal-title fw-bold">Book Appointment</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <input type="hidden" id="bDocId">
+    <div class="mb-3"><div class="p-3 rounded-3" style="background:var(--lt)"><div class="fw-bold" id="bDocName"></div><div class="text-muted small" id="bDocSpec"></div></div></div>
+    <div class="mb-3"><label class="form-label small fw-500">Date *</label><input type="date" class="form-control" id="bDate" onchange="loadSlots()"></div>
+    <div class="mb-3"><label class="form-label small fw-500">Available Slots</label><div class="row g-2" id="bSlots"><div class="text-muted small col-12">Select a date first</div></div></div>
+    <input type="hidden" id="bTime">
+    <div class="mb-3"><label class="form-label small fw-500">Type</label>
+      <select class="form-select" id="bType"><option value="REGULAR">General Consultation</option><option value="FOLLOW_UP">Follow-up</option><option value="EMERGENCY">Emergency</option></select>
+    </div>
+    <div class="mb-3"><label class="form-label small fw-500">Symptoms / Notes</label><textarea class="form-control" id="bSymptoms" rows="2" placeholder="Describe symptoms..."></textarea></div>
+  </div>
+  <div class="modal-footer border-0 pt-0"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" onclick="confirmBook()"><i class="bi bi-calendar-check me-2"></i>Confirm Booking</button></div>
+</div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  
+  const token=localStorage.getItem('token');
+  const user=JSON.parse(localStorage.getItem('user')||'{}');
+  function logout(){localStorage.removeItem('token');localStorage.removeItem('user');window.location.href='/';}
+  function showAlert(msg,type='success'){
+    const box=document.getElementById('alertBox');
+    box.innerHTML=`<div class="alert alert-${type} alert-dismissible shadow-sm">${msg}<button class="btn-close" data-bs-dismiss="alert"></button></div>`;
+    setTimeout(()=>{const a=box.querySelector('.alert');if(a)a.remove();},4000);
+  }
+  function badge(status){
+    const m={PENDING:'badge-pending',CONFIRMED:'badge-confirmed',COMPLETED:'badge-completed',CANCELLED:'badge-cancelled',NO_SHOW:'badge-no_show'};
+    return `<span class="badge rounded-pill px-3 py-2 ${m[status]||'bg-secondary'}">${status.replace('_',' ')}</span>`;
+  }
+  async function apiFetch(url,opts={}){
+    const r=await fetch(url,{headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},...opts});
+    const d=await r.json();
+    if(!d.success) throw new Error(d.message||'Request failed');
+    return d.data;
+  }
+  if(!token||user.role!=='PATIENT') window.location.href='/login';
+  document.getElementById('uName').textContent=user.name;
+  document.getElementById('bDate').min=new Date().toISOString().split('T')[0];
+  let allDocs=[];
+  // BUG FIX: endpoint was /api/patient/doctors (doesn't exist) → corrected to /api/doctors
+  async function load(){
+    try{
+      allDocs=await apiFetch('/api/doctors');
+      const specs=[...new Set(allDocs.map(d=>d.specialization))].sort();
+      const sel=document.getElementById('specFilter');
+      specs.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+      filter();
+    }catch(e){showAlert('Failed to load doctors','danger');}
+  }
+  function filter(){
+    const kw=document.getElementById('search').value.toLowerCase();
+    const sp=document.getElementById('specFilter').value;
+    const mr=parseFloat(document.getElementById('ratingFilter').value)||0;
+    render(allDocs.filter(d=>(!kw||(d.name.toLowerCase().includes(kw)||d.specialization.toLowerCase().includes(kw)))&&(!sp||d.specialization===sp)&&(!mr||(d.rating||0)>=mr)));
+  }
+  function render(docs){
+    const g=document.getElementById('docGrid');
+    if(!docs.length){g.innerHTML='<div class="col-12 text-center py-5 text-muted"><i class="bi bi-search fs-1 d-block mb-2"></i>No doctors found</div>';return;}
+    g.innerHTML=docs.map(d=>`
+      <div class="col-md-4"><div class="card doctor-card h-100 p-0 overflow-hidden">
+        <div class="p-4">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="doc-avatar"><i class="bi bi-person"></i></div>
+            <div><div class="fw-bold">Dr. ${d.name}</div><span class="badge bg-primary bg-opacity-10 text-primary small">${d.specialization}</span></div>
+          </div>
+          <div class="text-muted small mb-1"><i class="bi bi-building me-2"></i>${d.department||'–'}</div>
+          <div class="text-muted small mb-1"><i class="bi bi-award me-2"></i>${d.experienceYears||0} years experience</div>
+          <div class="text-muted small mb-3"><i class="bi bi-star-fill text-warning me-2"></i>${(d.rating||0).toFixed(1)} (${d.totalReviews||0} reviews)</div>
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="fw-bold text-primary">₹${d.consultationFee||0}</div>
+            <button class="btn btn-primary btn-sm rounded-pill px-3" onclick="openBook(${d.id},'${d.name}','${d.specialization}',${d.consultationFee||0})">Book</button>
+          </div>
+        </div>
+      </div></div>`).join('');
+  }
+  function openBook(id,name,spec,fee){
+    document.getElementById('bDocId').value=id;
+    document.getElementById('bDocName').textContent='Dr. '+name+' — ₹'+fee;
+    document.getElementById('bDocSpec').textContent=spec;
+    document.getElementById('bDate').value='';
+    document.getElementById('bTime').value='';
+    document.getElementById('bSlots').innerHTML='<div class="text-muted small col-12">Select a date first</div>';
+    new bootstrap.Modal(document.getElementById('bookModal')).show();
+  }
+  async function loadSlots(){
+    const did=document.getElementById('bDocId').value;
+    const dt=document.getElementById('bDate').value;
+    if(!did||!dt)return;
+    document.getElementById('bSlots').innerHTML='<div class="text-muted small col-12">Loading slots...</div>';
+    try{
+      const slots=await apiFetch('/api/doctors/'+did+'/available-slots?date='+dt);
+      if(!slots.length){document.getElementById('bSlots').innerHTML='<div class="text-danger small col-12">No slots available on this date.</div>';return;}
+      document.getElementById('bSlots').innerHTML=slots.map(s=>`<div class="col-4"><div class="time-slot" onclick="selSlot('${s}',this)">${s}</div></div>`).join('');
+    }catch(e){document.getElementById('bSlots').innerHTML='<div class="text-danger small col-12">Error loading slots</div>';}
+  }
+  function selSlot(t,el){document.querySelectorAll('.time-slot').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');document.getElementById('bTime').value=t;}
+  // BUG FIX: endpoint was /api/patient/appointments → corrected to /api/appointments
+  async function confirmBook(){
+    const did=document.getElementById('bDocId').value;
+    const dt=document.getElementById('bDate').value;
+    const t=document.getElementById('bTime').value;
+    if(!dt){showAlert('Please select a date','warning');return;}
+    if(!t){showAlert('Please select a time slot','warning');return;}
+    try{
+      const r=await apiFetch('/api/appointments',{method:'POST',body:JSON.stringify({
+        doctorId:parseInt(did),appointmentDate:dt,appointmentTime:t,
+        appointmentType:document.getElementById('bType').value,
+        symptoms:document.getElementById('bSymptoms').value
+      })});
+      bootstrap.Modal.getInstance(document.getElementById('bookModal')).hide();
+      showAlert('Appointment booked! ID: #'+r.id);
+    }catch(e){showAlert(e.message,'danger');}
+  }
+  load();
+</script></body></html>
