@@ -1,5 +1,4 @@
 #                                                   🏥 Hospital Appointment Booking System
-
 <div align="center">
 
 ![Java](https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=java&logoColor=white)
@@ -259,5 +258,6 @@ Contributions are welcome! Please:
 <div align="center">
   <sub>Built with ❤️ using Java · Spring Boot · Spring Security · MySQL · Thymeleaf · Bootstrap 5</sub>
 </div>
-#   h o s p i t a l _ a p p o i n t m e n t _ b o o k i n g  
+#   h o s p i t a l _ a p p o i n t m e n t _ b o o k i n g 
+ 
  
