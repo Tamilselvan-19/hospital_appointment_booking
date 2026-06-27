@@ -4,7 +4,6 @@
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-brightgreen?style=flat-square&logo=springboot)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-blue?style=flat-square&logo=mysql)
 ![JWT](https://img.shields.io/badge/Auth-JWT-black?style=flat-square&logo=jsonwebtokens)
-![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=flat-square&logo=githubactions)
 ![License](https://img.shields.io/badge/License-Internal-red?style=flat-square)
 
 A production-grade, full-stack hospital management platform built with **Spring Boot 3.2**, **MySQL**, **JWT authentication**, and **Thymeleaf** templates. Patients can register, search doctors, and book appointments online. Doctors can manage their schedules and confirm appointments. Payments are handled through the **Cashfree** payment gateway.
@@ -22,7 +21,6 @@ A production-grade, full-stack hospital management platform built with **Spring 
 - [Running the Application](#-running-the-application)
 - [API Overview](#-api-overview)
 - [Testing](#-testing)
-- [CI/CD Pipeline](#-cicd-pipeline)
 - [Known Bugs Fixed](#-known-bugs-fixed)
 
 ---
@@ -33,7 +31,7 @@ A production-grade, full-stack hospital management platform built with **Spring 
 |---|---|
 | 🧑‍⚕️ **Patient** | Register, log in, browse verified doctors, book/cancel appointments, pay online |
 | 👨‍⚕️ **Doctor** | Manage profile, configure schedule and time slots, confirm/complete appointments |
-| 🔐 **Security** | JWT-based stateless auth with role-based access control (PATIENT / DOCTOR / ADMIN) |
+| 🔐 **Security** | JWT-based stateless auth with role-based access control (PATIENT / DOCTOR ) |
 | 💳 **Payments** | Cashfree sandbox-ready payment order creation and verification |
 | 🛡️ **Reliability** | Global exception handling with user-friendly error responses for all failure scenarios |
 | 🧪 **Testability** | H2-based test suite — no MySQL required to run the full test suite |
@@ -51,7 +49,7 @@ A production-grade, full-stack hospital management platform built with **Spring 
 | Templates | Thymeleaf + Thymeleaf Security Extras |
 | Build | Maven 3.8+ |
 | Testing | JUnit 5, Mockito, MockMvc, H2 |
-| CI/CD | GitHub Actions |
+| GitHub Actions |
 | Payments | Cashfree Payment Gateway (sandbox) |
 
 ---
@@ -291,49 +289,6 @@ mvn test -Dspring.profiles.active=test -Dtest="DefectLifecycleRegressionTest"
 mvn failsafe:integration-test failsafe:verify -Dspring.profiles.active=test
 ```
 
----
-
-## 🔄 CI/CD Pipeline
-
-Triggered automatically on every push and pull request to `main` or `develop`.
-
-```
-Push / PR to main or develop
-        │
-        ▼
-┌───────────────────────────────────────────┐
-│  Stage 1 — Smoke Gate                     │
-│  mvn compile                              │
-│  Fails fast in < 60s on compile errors    │
-└───────────────────┬───────────────────────┘
-                    │ on success
-                    ▼
-┌───────────────────────────────────────────┐
-│  Stage 2 — Unit Tests                     │
-│  AppointmentServiceTest                   │
-│  AuthServiceTest                          │
-│  DoctorServiceTest                        │
-│  No MySQL required                        │
-└───────────────────┬───────────────────────┘
-                    │ on success
-                    ▼
-┌───────────────────────────────────────────┐
-│  Stage 3 — Integration & API Tests        │
-│  FullIntegrationTest                      │
-│  ApiContractTest                          │
-│  DefectLifecycleRegressionTest            │
-│  AppointmentControllerTest                │
-│  Maven Failsafe verification              │
-│  All against H2 in-memory                │
-└───────────────────┬───────────────────────┘
-                    │ on success (main branch only)
-                    ▼
-┌───────────────────────────────────────────┐
-│  Stage 4 — Build & Upload JAR             │
-│  mvn package -DskipTests                  │
-│  Artifact retained for 30 days            │
-└───────────────────────────────────────────┘
-```
 
 > Test reports (`surefire-reports/`, `failsafe-reports/`) are uploaded as GitHub Actions artifacts after each stage so failures can be inspected without re-running the build.
 
