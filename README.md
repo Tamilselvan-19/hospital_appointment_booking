@@ -2,9 +2,10 @@
 
 ![Java](https://img.shields.io/badge/Java-17-orange?style=flat-square&logo=java)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-brightgreen?style=flat-square&logo=springboot)
+![Thymeleaf](https://img.shields.io/badge/Thymeleaf-3.1-005F0F?style=flat-square&logo=thymeleaf&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-blue?style=flat-square&logo=mysql)
 ![JWT](https://img.shields.io/badge/Auth-JWT-black?style=flat-square&logo=jsonwebtokens)
-![License](https://img.shields.io/badge/License-Internal-red?style=flat-square)
+
 
 A production-grade, full-stack hospital management platform built with **Spring Boot 3.2**, **MySQL**, **JWT authentication**, and **Thymeleaf** templates. Patients can register, search doctors, and book appointments online. Doctors can manage their schedules and confirm appointments. Payments are handled through the **Cashfree** payment gateway.
 
