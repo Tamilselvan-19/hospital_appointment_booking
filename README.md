@@ -50,7 +50,6 @@ A production-grade, full-stack hospital management platform built with **Spring 
 | Templates | Thymeleaf + Thymeleaf Security Extras |
 | Build | Maven 3.8+ |
 | Testing | JUnit 5, Mockito, MockMvc, H2 |
-| GitHub Actions |
 | Payments | Cashfree Payment Gateway (sandbox) |
 
 ---
